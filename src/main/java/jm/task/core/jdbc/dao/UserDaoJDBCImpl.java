@@ -21,32 +21,32 @@ public class UserDaoJDBCImpl implements UserDao {
                     " name VARCHAR(100), " +
                     " lastName VARCHAR(100), " +
                     " age INTEGER)");
-            System.out.println("Таблица создана");
-            connection.setAutoCommit(true);
+            connection.commit();
         } catch (SQLException e) {
+            e.printStackTrace();
             try {
                 connection.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-            e.getStackTrace();
         }
+        System.out.println("Таблица создана");
     }
 
     public void dropUsersTable() {
         try (Statement statement = connection.createStatement()) {
             connection.setAutoCommit(false);
             statement.executeUpdate("DROP TABLE IF EXISTS table_user");
-            System.out.println("Таблица удалена");
-            connection.setAutoCommit(true);
+            connection.commit();
         } catch (SQLException e) {
+            e.printStackTrace();
             try {
                 connection.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-            e.getStackTrace();
         }
+        System.out.println("Таблица удалена");
     }
 
     public void saveUser(String name, String lastName, byte age) {
@@ -57,14 +57,14 @@ public class UserDaoJDBCImpl implements UserDao {
             preparedStatement.setString(2, lastName);
             preparedStatement.setByte(3, age);
             preparedStatement.executeUpdate();
-            connection.setAutoCommit(true);
+            connection.commit();
         } catch (SQLException e) {
+            e.printStackTrace();
             try {
                 connection.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-            e.getStackTrace();
         }
         System.out.println("User с именем - " + name + " добавлен в базу данных");
     }
@@ -73,14 +73,14 @@ public class UserDaoJDBCImpl implements UserDao {
         try (Statement statement = connection.createStatement()) {
             connection.setAutoCommit(false);
             statement.executeUpdate("DELETE FROM table_user WHERE id");
-            connection.setAutoCommit(true);
+            connection.commit();
         } catch (SQLException e) {
+            e.printStackTrace();
             try {
                 connection.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-            e.getStackTrace();
         }
         System.out.println("User " + id + " удален");
     }
@@ -88,7 +88,9 @@ public class UserDaoJDBCImpl implements UserDao {
     public List<User> getAllUsers() {
         List<User> allUser = new ArrayList<>();
         try (Statement statement = connection.createStatement()) {
+            connection.setAutoCommit(false);
             ResultSet resultSet = statement.executeQuery("SELECT id, name, lastName, age FROM table_user");
+            connection.commit();
             while (resultSet.next()) {
                 User user = new User();
                 user.setId(resultSet.getLong("id"));
@@ -98,12 +100,12 @@ public class UserDaoJDBCImpl implements UserDao {
                 allUser.add(user);
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             try {
                 connection.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-            e.getStackTrace();
         }
         return allUser;
     }
@@ -112,15 +114,16 @@ public class UserDaoJDBCImpl implements UserDao {
         try (Statement statement = connection.createStatement()) {
             connection.setAutoCommit(false);
             statement.executeUpdate("TRUNCATE table_user");
-            connection.setAutoCommit(true);
             System.out.println("Таблица очищена");
+            connection.commit();
         } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Таблица не очищена");
             try {
                 connection.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-            System.out.println("Таблица не очищена");
         }
     }
 }
