@@ -6,6 +6,7 @@ import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,7 @@ public class UserDaoHibernateImpl implements UserDao {
             session.createSQLQuery("CREATE TABLE IF NOT EXISTS table_user" +
                     "(id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY, " +
                     " name VARCHAR(100), " + " lastName VARCHAR(100), " +
-                    " age INTEGER)").addEntity(User.class).executeUpdate();
+                    " age INTEGER)").executeUpdate();
             transaction.commit();
             System.out.println("Таблица создана");
         } catch (HibernateException e) {
@@ -40,7 +41,7 @@ public class UserDaoHibernateImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            session.createSQLQuery("DROP TABLE IF EXISTS table_user").addEntity(User.class).executeUpdate();
+            session.createSQLQuery("DROP TABLE IF EXISTS table_user").executeUpdate();
             transaction.commit();
             System.out.println("Таблица удалена");
         } catch (HibernateException e) {
@@ -56,7 +57,11 @@ public class UserDaoHibernateImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            session.save(new User(name, lastName, age));
+            NativeQuery user = session.createSQLQuery("INSERT INTO table_user(name,lastName,age) VALUES (?,?,?)");
+            user.setParameter(1, name);
+            user.setParameter(2, lastName);
+            user.setParameter(3, age);
+            user.executeUpdate();
             transaction.commit();
             System.out.println("User с именем - " + name + " добавлен в базу данных");
         } catch (HibernateException e) {
@@ -72,7 +77,9 @@ public class UserDaoHibernateImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            session.delete(session.get(User.class, id));
+            NativeQuery userId = session.createSQLQuery("DELETE FROM table_user WHERE id = ?");
+            userId.setParameter(1, id);
+            userId.executeUpdate();
             transaction.commit();
             System.out.println("User " + id + " удален");
         } catch (HibernateException e) {
@@ -85,19 +92,25 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public List<User> getAllUsers() {
-        List<User> users = new ArrayList<>();
-        Transaction transaction = null;
+        List<User> allUsers = new ArrayList<>();
         try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            users = session.createQuery("FROM User", User.class).getResultList();
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-                e.printStackTrace();
+            NativeQuery users = session.createSQLQuery("SELECT * FROM table_user");
+            List<Object[]> us = users.list();
+            for (Object[] u : us) {
+                User user = new User();
+                user.setId(Long.parseLong(u[0].toString()));
+                user.setName(u[1].toString());
+                user.setLastName(u[2].toString());
+                user.setAge(Byte.parseByte(u[3].toString()));
+                allUsers.add(user);
             }
+            for (User value : allUsers) {
+                System.out.println(value.toString());
+            }
+        } catch (HibernateException e) {
+            e.printStackTrace();
         }
-        return users;
+        return allUsers;
     }
 
     @Override
