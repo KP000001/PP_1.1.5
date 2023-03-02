@@ -2,13 +2,10 @@ package jm.task.core.jdbc.dao;
 
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.hibernate.query.NativeQuery;
+import org.hibernate.*;
 
-import java.util.ArrayList;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 import java.util.List;
 
 public class UserDaoHibernateImpl implements UserDao {
@@ -57,11 +54,7 @@ public class UserDaoHibernateImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            NativeQuery user = session.createSQLQuery("INSERT INTO table_user(name,lastName,age) VALUES (?,?,?)");
-            user.setParameter(1, name);
-            user.setParameter(2, lastName);
-            user.setParameter(3, age);
-            user.executeUpdate();
+            session.save(new User(name, lastName, age));
             transaction.commit();
             System.out.println("User с именем - " + name + " добавлен в базу данных");
         } catch (HibernateException e) {
@@ -77,9 +70,7 @@ public class UserDaoHibernateImpl implements UserDao {
         Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            NativeQuery userId = session.createSQLQuery("DELETE FROM table_user WHERE id = ?");
-            userId.setParameter(1, id);
-            userId.executeUpdate();
+            session.delete(session.get(User.class, id));
             transaction.commit();
             System.out.println("User " + id + " удален");
         } catch (HibernateException e) {
@@ -92,18 +83,12 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public List<User> getAllUsers() {
-        List<User> allUsers = new ArrayList<>();
+        List<User> allUsers = null;
         try (Session session = sessionFactory.openSession()) {
-            NativeQuery users = session.createSQLQuery("SELECT * FROM table_user");
-            List<Object[]> us = users.list();
-            for (Object[] u : us) {
-                User user = new User();
-                user.setId(Long.parseLong(u[0].toString()));
-                user.setName(u[1].toString());
-                user.setLastName(u[2].toString());
-                user.setAge(Byte.parseByte(u[3].toString()));
-                allUsers.add(user);
-            }
+            CriteriaBuilder cb = session.getCriteriaBuilder();
+            CriteriaQuery<User> cq = cb.createQuery(User.class);
+            cq.from(User.class);
+            allUsers = session.createQuery(cq).getResultList();
             for (User value : allUsers) {
                 System.out.println(value.toString());
             }
