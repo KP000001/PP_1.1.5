@@ -4,6 +4,8 @@ import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.*;
 
+import javax.persistence.TypedQuery;
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserDaoHibernateImpl implements UserDao {
@@ -81,10 +83,10 @@ public class UserDaoHibernateImpl implements UserDao {
 
     @Override
     public List<User> getAllUsers() {
-        List<User> allUsers = null;
+        List<User> allUsers = new ArrayList<>();
         try (Session session = sessionFactory.openSession()) {
-            Query query = session.createQuery("from User");
-            allUsers = query.list();
+            TypedQuery<User> tqUser = session.createQuery("from User", User.class);
+            allUsers = tqUser.getResultList();
             for (User value : allUsers) {
                 System.out.println(value.toString());
             }
